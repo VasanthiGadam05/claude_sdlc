@@ -27,6 +27,14 @@ verification also hold code in these paths to this bar).
   `scripts/install_git_hooks.py` invoke `python` / `git` via argument lists, not shell strings.
 - Always resolve discovered paths relative to the scan root with `Path.relative_to`; never let a
   discovered path escape `root` into the listed output.
+- Never dereference a symlinked file for the read-check probe — check `Path.is_symlink()` first
+  and skip it (as an FR8 warning), per `docs/design-review.md` R8. A safe reported path is not the
+  same guarantee as safe read content.
+- `.githooks/pre-commit` resolves the repo root via `git rev-parse --show-toplevel` before
+  invoking `docsync` (never assumes the hook's cwd is the root), and tries `python3` before
+  falling back to `python` (`docs/design-review.md` R2/G2).
+- `scripts/install_git_hooks.py` backs up any existing `.git/hooks/pre-commit` to
+  `pre-commit.bak` before writing, and prints a warning when it does (`docs/design-review.md` R3).
 - No secrets, tokens, or credentials anywhere in this codebase (this repo is public — see root
   `CLAUDE.md`). This tool has no reason to ever need one.
 
