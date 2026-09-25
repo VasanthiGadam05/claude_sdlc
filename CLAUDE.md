@@ -57,10 +57,19 @@ Never skip this gate, and never edit `pipeline-status.json` to fake an approval 
 - `.claude/instructions/coding.md` — written by `/architecture` once a tech stack is chosen;
   scopes language/security/testing rules for whatever gets implemented in Phase 5.
 
-## Sources (fill in when known — never guess these)
+## Sources
 
-- **User story**: Confluence — page link: `TBD`
-- **GitHub remote**: `TBD` (set via `git remote add origin <url>` once provided)
+This repo is **public** — never commit the actual Confluence link or GitHub remote URL into any
+tracked file (`CLAUDE.md`, `docs/pipeline-status.json`, commit messages, PR bodies, etc.).
+
+- **User story**: Confluence — real link lives in `.claude/local-config.json` (gitignored, not
+  committed) under `confluenceRef`. `/requirements` reads it from there.
+- **GitHub remote**: real URL lives in `.claude/local-config.json` under `githubRemote`; already
+  configured locally as `origin` (`git remote -v`). `/create-pr` reads it from there if `origin`
+  isn't already set.
+
+If `.claude/local-config.json` is missing either value, ask the user for it directly — never
+guess, and never write the raw value into a tracked file.
 
 ## Security
 

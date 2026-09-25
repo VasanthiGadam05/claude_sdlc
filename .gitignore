@@ -30,3 +30,6 @@ Thumbs.db
 .codemie/
 .playwright-mcp/
 docs/codemie/
+
+# Local-only refs (Confluence link, repo remote) — this repo is public, never commit these
+.claude/local-config.json

@@ -1,4 +1,5 @@
 {
+  "_note": "This repo is public. Never put the real Confluence page link or GitHub remote URL in userStory.ref / repo.remote below — those live in .claude/local-config.json (gitignored) instead.",
   "userStory": { "source": "confluence", "ref": null },
   "repo": { "remote": null, "branch": null },
   "phases": [

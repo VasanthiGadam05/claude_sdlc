@@ -6,7 +6,9 @@ request against the existing target GitHub repo.
 
 ## Precondition
 Phase 7 (`verify`) must be `APPROVED`. The GitHub remote must be configured (`git remote -v` shows
-`origin`) — if not, stop and ask the user for the repo URL rather than guessing it.
+`origin`) — if not, check `.claude/local-config.json`'s `githubRemote` field; if that's also
+missing, stop and ask the user for the repo URL rather than guessing it. Never write the real
+remote URL into `docs/pipeline-status.json` or any other tracked file — this repo is public.
 
 ## What "done" looks like
 1. Confirm the feature branch (from Phase 5) has all work committed; push it to `origin`.

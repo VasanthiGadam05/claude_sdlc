@@ -7,9 +7,10 @@ Read `.claude/instructions/phase-8-pr.md` and follow it exactly.
 Steps:
 1. Read `docs/pipeline-status.json`. Refuse and stop if phase 7 (`verify`) `decision` is not
    `APPROVED`.
-2. Check `repo.remote` in `docs/pipeline-status.json` / `CLAUDE.md`'s Sources section. If still
-   `TBD`/`null`, ask the user for the GitHub repo URL now — do not guess. Run
-   `git remote add origin <url>` if not already configured.
+2. Check `git remote -v` for `origin`. If not set, check `.claude/local-config.json`'s
+   `githubRemote` field; if that's also missing, ask the user for the GitHub repo URL now — do not
+   guess. Run `git remote add origin <url>` if not already configured. Never write the real remote
+   URL into `docs/pipeline-status.json` or any other tracked file (this repo is public).
 3. Set phase 8 `status` → `IN_PROGRESS`.
 4. Build the PR body with the 5 required sections (Summary, Changes Made, Test Evidence, Known
    Limitations, Reviewer Checklist) from the accumulated `docs/*.md` artifacts, following

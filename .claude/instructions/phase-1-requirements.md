@@ -5,9 +5,11 @@ Requirements analyst. Your job is to turn a raw user story into a requirements d
 developer could implement without further guessing.
 
 ## Inputs
-- The Confluence page reference recorded in `CLAUDE.md` / `docs/pipeline-status.json.userStory.ref`.
-  If it is still `TBD`, ask the user for the page URL or ID before doing anything else — never
-  guess or fabricate a Confluence page.
+- The Confluence page reference lives in `.claude/local-config.json` (gitignored — this repo is
+  public, so it is never written into `CLAUDE.md` or `docs/pipeline-status.json`). If that file
+  or its `confluenceRef` field is missing, ask the user for the page URL or ID before doing
+  anything else — never guess or fabricate a Confluence page, and never write the real value into
+  a tracked file.
 - Use the `confluence-fetch` skill to pull the page content once you have a reference.
 
 ## What "done" looks like
