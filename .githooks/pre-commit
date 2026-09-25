@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+
+REPO_ROOT=$(git rev-parse --show-toplevel) || exit 1
+
+PYTHON=""
+for candidate in python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c "" >/dev/null 2>&1; then
+        PYTHON="$candidate"
+        break
+    fi
+done
+
+if [ -z "$PYTHON" ]; then
+    echo "docsync pre-commit hook: no working python3 or python interpreter found on PATH" >&2
+    exit 1
+fi
+
+cd "$REPO_ROOT" || exit 1
+
+"$PYTHON" -m docsync "$REPO_ROOT"
+DOCSYNC_EXIT=$?
+
+if [ "$DOCSYNC_EXIT" -ne 0 ]; then
+    echo "docsync pre-commit hook: docsync failed (exit $DOCSYNC_EXIT), blocking commit" >&2
+    exit "$DOCSYNC_EXIT"
+fi
+
+git add "$REPO_ROOT/SOURCE_FILES.md"
+
+exit 0
