@@ -74,6 +74,25 @@ def test_unreadable_file_yields_warning_but_other_files_still_returned(tmp_path)
     assert any("bad.py" in w for w in result.warnings)
 
 
+def test_unlistable_subdirectory_yields_warning_but_other_dirs_still_scanned(tmp_path):
+    _touch(tmp_path / "good.py")
+    blocked = tmp_path / "blocked"
+    blocked.mkdir()
+    _touch(blocked / "hidden.py")
+
+    if sys.platform == "win32":
+        pytest.skip("chmod-based unlistable-directory simulation is not reliable on Windows")
+
+    os.chmod(blocked, 0o000)
+    try:
+        result = scan(tmp_path)
+    finally:
+        os.chmod(blocked, 0o755)
+
+    assert result.paths == ["good.py"]
+    assert any("blocked" in w for w in result.warnings)
+
+
 def test_symlinked_file_is_skipped_without_being_dereferenced(tmp_path):
     target_dir = tmp_path / "outside"
     target_dir.mkdir()
