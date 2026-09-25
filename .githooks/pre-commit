@@ -26,5 +26,11 @@ if [ "$DOCSYNC_EXIT" -ne 0 ]; then
 fi
 
 git add "$REPO_ROOT/SOURCE_FILES.md"
+GIT_ADD_EXIT=$?
+
+if [ "$GIT_ADD_EXIT" -ne 0 ]; then
+    echo "docsync pre-commit hook: failed to stage regenerated SOURCE_FILES.md (exit $GIT_ADD_EXIT), blocking commit" >&2
+    exit "$GIT_ADD_EXIT"
+fi
 
 exit 0
