@@ -1,0 +1,14 @@
+{
+  "userStory": { "source": "confluence", "ref": null },
+  "repo": { "remote": null, "branch": null },
+  "phases": [
+    { "n": 1, "id": "requirements",  "artifact": "docs/requirements.md",         "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
+    { "n": 2, "id": "architecture",  "artifact": "docs/architecture.md",         "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
+    { "n": 3, "id": "design-review", "artifact": "docs/design-review.md",        "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
+    { "n": 4, "id": "impl-plan",     "artifact": "docs/impl-plan.md",            "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
+    { "n": 5, "id": "implement",     "artifact": null,                           "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
+    { "n": 6, "id": "review",        "artifact": "docs/review-notes.md",         "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
+    { "n": 7, "id": "verify",        "artifact": "docs/verification-report.md",  "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
+    { "n": 8, "id": "pr",            "artifact": null,                           "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null }
+  ]
+}
