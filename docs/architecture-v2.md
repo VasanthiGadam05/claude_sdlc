@@ -18,12 +18,15 @@ The Python Source File Scanner is a standalone CLI application that scans a user
 - **Key Contract**: Returns an absolute path string or raises `ValueError` if invalid.
 
 #### 2. **DirectoryScanner Module** (`scanner.py`)
-- **Responsibility**: Recursively traverse directory tree and collect file paths.
+- **Responsibility**: Recursively traverse directory tree and collect file paths, filtering out hidden directories and non-Python files.
 - **Methods**:
-  - `scan_directory(root_path: str) -> List[str]`: Recursively walk directory, return all `.py` file paths relative to root.
+  - `scan_directory(root_path: str) -> List[str]`: Recursively walk directory, return all `.py` file paths relative to root, excluding hidden directories. Skips inaccessible directories with warnings and continues scanning remaining accessible ones.
   - `is_hidden_directory(path: str) -> bool`: Check if a directory name starts with `.` or is `__pycache__`.
-- **Key Contract**: Returns a sorted list of relative paths (forward slashes, POSIX-style).
-- **Edge Cases**: Handles permission errors, symlink loops, non-existent directories.
+- **Key Contract**: Returns a sorted list of relative paths normalized to POSIX-style (forward slashes) for cross-platform consistency. Example: `['src/models/user.py', 'tests/test_main.py']`
+- **Edge Cases**: 
+  - Permission errors on subdirectories: Logs warning and continues scanning other directories.
+  - Symlinks: Never followed (`os.walk(followlinks=False)`); symlinks are treated as regular files and excluded if in hidden directories, included otherwise.
+  - Nonexistent root directory: Raises `FileNotFoundError` before returning.
 
 #### 3. **FileFilter Module** (`filter.py`)
 - **Responsibility**: Filter files based on criteria (extension, hidden status).
@@ -38,9 +41,25 @@ The Python Source File Scanner is a standalone CLI application that scans a user
   - `build_hierarchy(files: List[str]) -> Dict`: Create a nested dictionary structure representing the directory tree.
 - **Key Contract**: Returns a formatted Markdown string with proper headers, indentation, and links.
 - **Format**:
-  - Use `#` for top-level directories.
-  - Use `##`, `###`, etc., for subdirectories.
+  - Use `#` for top-level directories (depth 1).
+  - Use `##`, `###`, etc., for subdirectories (depth 2, 3, ...).
   - List files as bullet points under their parent directory.
+  - Example output:
+    ```markdown
+    # src
+    
+    ## models
+    - user.py
+    - product.py
+    
+    ## utils
+    - helper.py
+    - validator.py
+    
+    # tests
+    - test_integration.py
+    - test_unit.py
+    ```
 
 #### 5. **FileWriter Module** (`writer.py`)
 - **Responsibility**: Write Markdown content to disk safely.
@@ -51,12 +70,25 @@ The Python Source File Scanner is a standalone CLI application that scans a user
 #### 6. **Main Orchestrator** (`main.py`)
 - **Responsibility**: Coordinate workflow and error handling.
 - **Flow**:
-  1. Get directory from user via `UserInterface`.
-  2. Scan directory via `DirectoryScanner`.
-  3. Filter files via `FileFilter`.
-  4. Generate Markdown via `MarkdownGenerator`.
-  5. Write to file via `FileWriter`.
-  6. Report success to user.
+  ```python
+  try:
+      root_path = ui.get_directory_path()  # May raise ValueError if invalid
+      files = scanner.scan_directory(root_path)  # Returns .py files, excludes hidden dirs
+      markdown_content = generator.generate_markdown(files)
+      output_path = os.path.join(root_path, "generated_files.md")
+      writer.write_markdown(output_path, markdown_content)
+      ui.display_success(f"✓ Generated: {output_path}")
+  except ValueError as e:
+      ui.display_error(f"Error: Invalid directory. {str(e)}")
+      # Re-prompt user or exit (TBD by implementation team)
+  except (FileNotFoundError, NotADirectoryError) as e:
+      ui.display_error(f"Error: Directory not found or not accessible. {str(e)}")
+      exit(1)
+  except IOError as e:
+      ui.display_error(f"Error: Failed to write output file. {str(e)}")
+      exit(1)
+  ```
+- **Output Path Construction**: Output file is always `generated_files.md` in the root directory being scanned. Output path is constructed as `os.path.join(root_path, "generated_files.md")` and must be resolved to an absolute path before passing to `FileWriter`.
 
 ---
 
@@ -116,8 +148,10 @@ User Input (Directory Path)
    - Handle permission errors gracefully without exposing system details.
 
 3. **File Overwrite Safety**:
-   - Per requirements, overwrite without prompting (behavior is explicit).
+   - Per requirements (line 28-29 of requirements-v2.md), overwrite existing `generated_files.md` without prompting (behavior is explicit and intentional).
+   - Users must be made aware of this behavior via success message: e.g., "Created/overwritten: /path/to/generated_files.md".
    - Ensure output file path is valid before writing.
+   - Risk mitigation: Clear user communication in prompt and success message.
 
 4. **No Code Injection**:
    - Do not execute or evaluate file contents.
@@ -203,6 +237,8 @@ def write_markdown(file_path: str, content: str) -> None:
 **Entry Point**: `python main.py`
 
 **Output**: `<user_specified_directory>/generated_files.md`
+- Per requirements-v2.md line 59 clarification, the output file is written **inside** the root directory being scanned (not to its parent).
+- If user scans `/home/user/project`, output is `/home/user/project/generated_files.md`.
 
 **Dependencies**: None (uses standard library only).
 

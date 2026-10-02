@@ -5,7 +5,7 @@
   "phases": [
     { "n": 1, "id": "requirements",  "artifact": "docs/requirements-v2.md",         "status": "PENDING_APPROVAL", "startedAt": "2026-10-02T00:00:00+00:00", "completedAt": "2026-10-02T00:05:00+00:00", "decision": "APPROVED", "decidedAt": "2026-10-02T00:10:00+00:00", "reason": null },
     { "n": 2, "id": "architecture",  "artifact": "docs/architecture-v2.md",         "status": "PENDING_APPROVAL", "startedAt": "2026-10-02T00:10:00+00:00", "completedAt": "2026-10-02T00:20:00+00:00", "decision": "APPROVED", "decidedAt": "2026-10-02T00:25:00+00:00", "reason": null },
-    { "n": 3, "id": "design-review", "artifact": "docs/design-review-v2.md",        "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
+    { "n": 3, "id": "design-review", "artifact": "docs/design-review-v2.md",        "status": "PENDING_APPROVAL", "startedAt": "2026-10-02T00:25:00+00:00", "completedAt": "2026-10-02T00:50:00+00:00", "decision": null, "decidedAt": null, "reason": null },
     { "n": 4, "id": "impl-plan",     "artifact": "docs/impl-plan-v2.md",            "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
     { "n": 5, "id": "implement",     "artifact": null,                              "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
     { "n": 6, "id": "review",        "artifact": "docs/review-notes-v2.md",         "status": "NOT_STARTED", "startedAt": null, "completedAt": null, "decision": null, "decidedAt": null, "reason": null },
