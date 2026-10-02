@@ -66,15 +66,14 @@ class MarkdownGenerator:
         lines = []
         header_prefix = "#" * depth
 
-        for key in sorted(hierarchy.keys()):
-            if key == "_files":
-                for file_name in sorted(hierarchy[key]):
-                    lines.append(f"- {file_name}")
-            else:
-                lines.append(f"\n{header_prefix} {key}\n")
-                sub_content = self._render_hierarchy(
-                    hierarchy[key], depth + 1
-                )
-                lines.append(sub_content)
+        # Files at this level are listed first so they are not visually
+        # attributed to a following sub-directory heading.
+        for file_name in sorted(hierarchy.get("_files", [])):
+            lines.append(f"- {file_name}")
+
+        for key in sorted(k for k in hierarchy if k != "_files"):
+            lines.append(f"\n{header_prefix} {key}\n")
+            sub_content = self._render_hierarchy(hierarchy[key], depth + 1)
+            lines.append(sub_content)
 
         return "\n".join(lines).strip() + "\n"

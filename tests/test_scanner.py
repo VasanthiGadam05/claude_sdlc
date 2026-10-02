@@ -23,6 +23,31 @@ class TestDirectoryScanner(unittest.TestCase):
             result = self.scanner.scan_directory(tmpdir)
             self.assertEqual(result, [])
 
+    def test_scan_directory_permission_denied_subdir_is_skipped(self) -> None:
+        """An unreadable subdirectory is skipped with a warning; other files are still found."""
+        import io
+        import os
+        from contextlib import redirect_stdout
+        from unittest.mock import patch
+
+        real_scandir = os.scandir
+
+        def fake_scandir(path):
+            if Path(path).name == "locked":
+                raise PermissionError(13, "denied", str(path))
+            return real_scandir(path)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            Path(tmpdir, "locked").mkdir()
+            Path(tmpdir, "locked", "hidden_from_us.py").touch()
+            Path(tmpdir, "ok.py").touch()
+            buf = io.StringIO()
+            with patch("os.scandir", fake_scandir), redirect_stdout(buf):
+                result = self.scanner.scan_directory(tmpdir)
+
+        self.assertEqual(result, ["ok.py"])
+        self.assertIn("Warning", buf.getvalue())
+
     def test_scan_directory_with_python_files(self) -> None:
         """Test scanning a directory with Python files."""
         with tempfile.TemporaryDirectory() as tmpdir:

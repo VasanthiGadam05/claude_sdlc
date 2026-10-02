@@ -30,10 +30,31 @@ class TestMainIntegration(unittest.TestCase):
             self.assertIn("file1.py", content)
             self.assertIn("file2.py", content)
 
-    def test_main_with_nonexistent_directory(self) -> None:
-        """Test main with a nonexistent directory."""
-        with patch("builtins.input", return_value="/nonexistent/path"):
+    def test_main_reprompts_on_nonexistent_then_succeeds(self) -> None:
+        """A nonexistent path is rejected by the UI, which re-prompts until valid."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("builtins.input", side_effect=["/nonexistent/path", tmpdir]) as mock_in:
+                exit_code = main_module.main()
+
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(mock_in.call_count, 2)
+
+    def test_main_returns_1_when_input_closed(self) -> None:
+        """EOF on stdin (after an invalid path) must exit 1 rather than loop forever."""
+        with patch("builtins.input", side_effect=["/nonexistent/path", EOFError]):
             exit_code = main_module.main()
+
+        self.assertEqual(exit_code, 1)
+
+    def test_main_returns_1_when_scanner_raises(self) -> None:
+        """A FileNotFoundError from the scanner maps to exit code 1."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("builtins.input", return_value=tmpdir), patch.object(
+                main_module.DirectoryScanner,
+                "scan_directory",
+                side_effect=FileNotFoundError("gone"),
+            ):
+                exit_code = main_module.main()
 
         self.assertEqual(exit_code, 1)
 

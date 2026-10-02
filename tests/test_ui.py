@@ -70,6 +70,20 @@ class TestUserInterface(unittest.TestCase):
         self.assertIn("✓", output)
         self.assertIn("Test success", output)
 
+    def test_display_success_falls_back_on_unencodable_stdout(self) -> None:
+        """Success output must not raise when stdout cannot encode the check mark."""
+        import io
+        from contextlib import redirect_stdout
+
+        raw = io.BytesIO()
+        stream = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
+        with redirect_stdout(stream):
+            self.ui.display_success("Test success")
+        stream.flush()
+        output = raw.getvalue().decode("cp1252")
+        self.assertIn("[OK]", output)
+        self.assertIn("Test success", output)
+
 
 if __name__ == "__main__":
     unittest.main()

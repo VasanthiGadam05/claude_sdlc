@@ -56,4 +56,8 @@ class UserInterface:
         Args:
             message: The success message to display.
         """
-        print(f"✓ {message}")
+        try:
+            print(f"✓ {message}")
+        except UnicodeEncodeError:
+            # Legacy Windows code pages (e.g. cp1252) cannot encode the check mark.
+            print(f"[OK] {message}")

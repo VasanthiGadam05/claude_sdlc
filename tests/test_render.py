@@ -54,6 +54,13 @@ class TestMarkdownGenerator(unittest.TestCase):
         self.assertIn("## utils", result)
         self.assertIn("- helper.py", result)
 
+    def test_root_files_listed_before_subdirectory_headings(self) -> None:
+        """Root-level files must not appear under a sub-directory heading."""
+        result = self.generator.generate_markdown(["a.py", "Zed/z.py", "zz.py"])
+        self.assertLess(result.index("- a.py"), result.index("# Zed"))
+        self.assertLess(result.index("- zz.py"), result.index("# Zed"))
+        self.assertGreater(result.index("- z.py"), result.index("# Zed"))
+
     def test_generate_markdown_deterministic(self) -> None:
         """Test that output is deterministic (same input = same output)."""
         files = ["z_file.py", "a_file.py", "m_file.py"]
