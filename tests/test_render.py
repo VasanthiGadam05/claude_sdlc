@@ -1,36 +1,76 @@
-from __future__ import annotations
+"""Tests for the MarkdownGenerator module (v2 implementation)."""
 
+import unittest
 from pathlib import Path
 
-from docsync.render import render_markdown
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from markdown import MarkdownGenerator
 
 
-def test_render_lists_all_paths_in_given_order():
-    output = render_markdown(Path("/some/root"), ["a.py", "pkg/b.py"])
+class TestMarkdownGenerator(unittest.TestCase):
+    """Test cases for MarkdownGenerator class."""
 
-    assert "a.py" in output
-    assert "pkg/b.py" in output
-    assert output.index("a.py") < output.index("pkg/b.py")
+    def setUp(self) -> None:
+        """Set up test fixtures."""
+        self.generator = MarkdownGenerator()
+
+    def test_generate_markdown_empty_list(self) -> None:
+        """Test generating markdown from empty file list."""
+        result = self.generator.generate_markdown([])
+        self.assertIn("No Python files found", result)
+        self.assertIn("# Python Files", result)
+
+    def test_generate_markdown_single_file(self) -> None:
+        """Test generating markdown from single file."""
+        result = self.generator.generate_markdown(["file.py"])
+        self.assertIn("file.py", result)
+        self.assertIn("- file.py", result)
+
+    def test_generate_markdown_flat_structure(self) -> None:
+        """Test generating markdown with files in root."""
+        files = ["file1.py", "file2.py", "file3.py"]
+        result = self.generator.generate_markdown(files)
+        for file_name in files:
+            self.assertIn(f"- {file_name}", result)
+
+    def test_generate_markdown_nested_structure(self) -> None:
+        """Test generating markdown with nested directories."""
+        files = ["src/main.py", "src/utils/helper.py", "tests/test_main.py"]
+        result = self.generator.generate_markdown(files)
+        self.assertIn("src", result)
+        self.assertIn("utils", result)
+        self.assertIn("tests", result)
+        self.assertIn("main.py", result)
+        self.assertIn("helper.py", result)
+        self.assertIn("test_main.py", result)
+
+    def test_generate_markdown_headers_format(self) -> None:
+        """Test that markdown uses proper header formatting."""
+        files = ["src/utils/helper.py"]
+        result = self.generator.generate_markdown(files)
+        self.assertIn("# src", result)
+        self.assertIn("## utils", result)
+        self.assertIn("- helper.py", result)
+
+    def test_generate_markdown_deterministic(self) -> None:
+        """Test that output is deterministic (same input = same output)."""
+        files = ["z_file.py", "a_file.py", "m_file.py"]
+        result1 = self.generator.generate_markdown(files)
+        result2 = self.generator.generate_markdown(files)
+        self.assertEqual(result1, result2)
+
+    def test_build_hierarchy(self) -> None:
+        """Test building intermediate hierarchy structure."""
+        files = ["src/main.py", "src/utils/helper.py", "tests/test.py"]
+        hierarchy = self.generator.build_hierarchy(files)
+        self.assertIn("src", hierarchy)
+        self.assertIn("tests", hierarchy)
+        self.assertIn("utils", hierarchy["src"])
+        self.assertIn("_files", hierarchy["src"])
+        self.assertIn("main.py", hierarchy["src"]["_files"])
 
 
-def test_render_empty_paths_states_no_files_found():
-    output = render_markdown(Path("/some/root"), [])
-
-    assert "No Python source files were found" in output
-    assert ".py" not in output.replace("No Python source files were found.", "")
-
-
-def test_render_is_byte_identical_across_calls():
-    first = render_markdown(Path("/some/root"), ["a.py", "b.py"])
-    second = render_markdown(Path("/some/root"), ["a.py", "b.py"])
-
-    assert first == second
-
-
-def test_render_does_not_touch_filesystem(tmp_path):
-    nonexistent_root = tmp_path / "does-not-exist"
-
-    output = render_markdown(nonexistent_root, ["x.py"])
-
-    assert "x.py" in output
-    assert not nonexistent_root.exists()
+if __name__ == "__main__":
+    unittest.main()

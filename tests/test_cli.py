@@ -1,44 +1,54 @@
-from __future__ import annotations
+"""Integration tests for the main CLI (v2 implementation)."""
 
+import tempfile
+import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-import pytest
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from docsync import cli
-
-
-def test_invalid_root_returns_nonzero_and_logs_error(tmp_path, caplog):
-    missing_root = tmp_path / "does-not-exist"
-
-    exit_code = cli.main([str(missing_root)])
-
-    assert exit_code != 0
-    assert "does-not-exist" in caplog.text
+import main as main_module
 
 
-def test_normal_run_writes_source_files_md(tmp_path):
-    (tmp_path / "a.py").write_text("print(1)\n", encoding="utf-8")
-    (tmp_path / "pkg").mkdir()
-    (tmp_path / "pkg" / "b.py").write_text("print(2)\n", encoding="utf-8")
+class TestMainIntegration(unittest.TestCase):
+    """Integration tests for the main orchestrator."""
 
-    exit_code = cli.main([str(tmp_path)])
+    def test_main_with_valid_directory(self) -> None:
+        """Test main with a valid directory containing Python files."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            Path(tmpdir, "file1.py").touch()
+            Path(tmpdir, "file2.py").touch()
 
-    assert exit_code == 0
-    output_file = tmp_path / "SOURCE_FILES.md"
-    assert output_file.exists()
-    content = output_file.read_text(encoding="utf-8")
-    assert "a.py" in content
-    assert "pkg/b.py" in content
+            with patch("builtins.input", return_value=tmpdir):
+                exit_code = main_module.main()
+
+            self.assertEqual(exit_code, 0)
+            output_file = Path(tmpdir, "generated_files.md")
+            self.assertTrue(output_file.exists())
+            content = output_file.read_text()
+            self.assertIn("file1.py", content)
+            self.assertIn("file2.py", content)
+
+    def test_main_with_nonexistent_directory(self) -> None:
+        """Test main with a nonexistent directory."""
+        with patch("builtins.input", return_value="/nonexistent/path"):
+            exit_code = main_module.main()
+
+        self.assertEqual(exit_code, 1)
+
+    def test_main_with_empty_directory(self) -> None:
+        """Test main with an empty directory."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("builtins.input", return_value=tmpdir):
+                exit_code = main_module.main()
+
+            self.assertEqual(exit_code, 0)
+            output_file = Path(tmpdir, "generated_files.md")
+            self.assertTrue(output_file.exists())
+            content = output_file.read_text()
+            self.assertIn("No Python files found", content)
 
 
-def test_write_failure_returns_nonzero(tmp_path, monkeypatch):
-    (tmp_path / "a.py").write_text("print(1)\n", encoding="utf-8")
-
-    def _boom(self, *args, **kwargs):
-        raise OSError("disk full")
-
-    monkeypatch.setattr(Path, "write_text", _boom)
-
-    exit_code = cli.main([str(tmp_path)])
-
-    assert exit_code != 0
+if __name__ == "__main__":
+    unittest.main()
