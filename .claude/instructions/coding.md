@@ -1,64 +1,71 @@
-<!-- applyTo: docsync/**, tests/**, .githooks/**, scripts/** -->
-# Coding Standards — Automated Documentation Sync (Python Source Listing)
 
-Written by `/architecture` (Phase 2) based on the tech stack chosen in `docs/architecture.md`.
+<!-- applyTo: src/** -->
+# Coding Standards — Python Source File Scanner (V2)
+
+Written by `/architecture` (Phase 2) based on the tech stack chosen in `docs/architecture-v2.md`.
 Scopes Phase 5 (`/implement`) and anything touching the same paths afterward (Phase 6/7 review and
 verification also hold code in these paths to this bar).
 
 ## Language & Style
 
-- Python 3.11+, standard library only at runtime — no third-party runtime dependencies. `pytest`
-  is a dev/test-only dependency.
-- Full type hints on all function signatures (`from __future__ import annotations` at the top of
-  each module if needed for forward references).
-- Use `pathlib.Path` for all filesystem paths — never raw string concatenation. Always emit
-  forward-slash relative paths in `SOURCE_FILES.md` output regardless of host OS (NFR4): convert
-  with `path.as_posix()`, not manual string replacement.
-- No bare `except:` — catch the specific exception types you expect (`OSError`,
-  `UnicodeDecodeError`, `PermissionError`), per the two-tier error model in `docs/architecture.md`.
-- Keep `docsync/render.py` a pure function module: no filesystem or logging calls in it, so it
-  stays trivially unit-testable and guarantees the determinism required by NFR1.
+- Python 3.10+, standard library only — no external runtime dependencies.
+- Full type hints on all function signatures per PEP 484.
+- Use `pathlib.Path` for all filesystem paths — never raw string concatenation.
+- Always emit forward-slash relative paths in output Markdown regardless of host OS: convert
+  with `path.as_posix()`.
+- Use f-strings for all string formatting (no `%` or `.format()`).
+- Line length: 100 characters.
+- No bare `except:` — catch specific exception types (`OSError`, `PermissionError`, 
+  `FileNotFoundError`, `NotADirectoryError`).
 
 ## Security Rules
 
-- Never `import`, `exec`, `eval`, or `compile()` a scanned `.py` file's contents (NFR3) — the
-  scanner only opens files to path-check/read-check them, never to parse or run them as code.
-- Never use `subprocess` with `shell=True`. The `.githooks/pre-commit` hook and
-  `scripts/install_git_hooks.py` invoke `python` / `git` via argument lists, not shell strings.
-- Always resolve discovered paths relative to the scan root with `Path.relative_to`; never let a
-  discovered path escape `root` into the listed output.
-- Never dereference a symlinked file for the read-check probe — check `Path.is_symlink()` first
-  and skip it (as an FR8 warning), per `docs/design-review.md` R8. A safe reported path is not the
-  same guarantee as safe read content.
-- `.githooks/pre-commit` resolves the repo root via `git rev-parse --show-toplevel` before
-  invoking `docsync` (never assumes the hook's cwd is the root), and tries `python3` before
-  falling back to `python` (`docs/design-review.md` R2/G2).
-- `scripts/install_git_hooks.py` backs up any existing `.git/hooks/pre-commit` to
-  `pre-commit.bak` before writing, and prints a warning when it does (`docs/design-review.md` R3).
-- No secrets, tokens, or credentials anywhere in this codebase (this repo is public — see root
-  `CLAUDE.md`). This tool has no reason to ever need one.
+- Never `import`, `exec`, `eval`, or `compile()` scanned `.py` file contents — the scanner
+  only reads paths, never executes code.
+- Always validate user-provided directory paths with `Path.resolve()` to canonicalize and
+  prevent path traversal attacks.
+- Never follow symlinks during traversal: use `os.walk(followlinks=False)`.
+- Never dereference symlinked files — check `Path.is_symlink()` first and skip them.
+- Always resolve discovered paths relative to the scan root with `Path.relative_to()`;
+  never let a discovered path escape the root directory into output.
+- No secrets, tokens, or credentials in the codebase (repo is public per root `CLAUDE.md`).
 
 ## Error Handling Conventions
 
-- Per-file/per-directory failures (unreadable file, permission error walking a subdirectory,
-  broken symlink) must be caught at the point of failure, converted to a warning string, and must
-  never propagate out of `scanner.scan` — a single bad file must never fail the whole run (FR8,
-  NFR2).
-- Only a genuine usage error — `root` doesn't exist or isn't a directory — should produce a
-  non-zero exit code from `cli.main`. Validate this once, explicitly, before scanning starts;
-  don't let it surface as an unhandled exception.
-- Use the standard `logging` module (`WARNING` for per-file skips, `INFO` for the final summary
-  line) — no print-based debugging left in committed code.
+- Per-file/per-directory failures (permission denied, broken symlink) must be caught at the
+  point of failure and logged as warnings — never propagate out of the scanner. A single bad
+  file must never fail the whole run.
+- Only genuine usage errors (invalid directory, permissions on root) should produce non-zero
+  exit codes. Validate directory once, explicitly, before scanning starts.
+- Use `print()` for user-facing messages (prompts, status, errors).
+- Log skipped directories (hidden) to stdout for informational purposes.
+- Error message format: "Error: [brief message]. [Actionable suggestion]"
 
 ## Testing Conventions
 
-- `pytest`, with one test module per source module (`tests/test_scanner.py`,
-  `tests/test_render.py`, `tests/test_cli.py`).
-- Use `tmp_path` for any test that touches the filesystem — never write test fixtures into the
-  real repo tree, and never assume a particular OS path separator in assertions.
-- Cover at minimum: recursive discovery, each default-excluded directory name, the "zero files
-  found" case (FR9), an unreadable-file case that still returns the other files with a warning
-  (FR8), and a byte-identical-rerun determinism check (NFR1).
-- No network access and no dependency on the real `.git` directory in unit tests; hook-level
-  behavior (staging via `git add`) is covered as an integration test that inits a throwaway repo
-  under `tmp_path`.
+- Use `unittest` (standard library) with one test module per source module
+  (`tests/test_scanner.py`, `tests/test_markdown.py`, `tests/test_writer.py`, `tests/test_ui.py`).
+- Use `tempfile.TemporaryDirectory()` for any test touching the filesystem — never write
+  fixtures into the real repo tree, never assume a particular OS path separator in assertions.
+- Cover at minimum:
+  - Recursive discovery with mixed file types.
+  - Hidden directory exclusion (`.git`, `.github`, `__pycache__`).
+  - Empty directory (no Python files found).
+  - Permission denied case (should skip with warning).
+  - Valid directory with nested structure.
+  - Nonexistent directory (should raise `FileNotFoundError`).
+- Run tests with: `python -m unittest discover tests/ -v`
+
+## Code Organization
+
+- Module files in `src/`: `main.py`, `ui.py`, `scanner.py`, `filter.py`, `markdown.py`, `writer.py`.
+- Each module has a single responsibility (see `docs/architecture-v2.md` Components section).
+- Test files in `tests/`: mirror source structure with `test_` prefix.
+- Public interfaces clearly defined; private methods prefixed with `_`.
+
+## Documentation
+
+- Google-style docstrings for all public functions/classes.
+- Include: description, Args, Returns, Raises.
+- Avoid obvious comments; document WHY for non-obvious logic.
+- Module-level docstrings for all modules.
