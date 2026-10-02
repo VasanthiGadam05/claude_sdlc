@@ -119,6 +119,25 @@ class TestDirectoryScanner(unittest.TestCase):
         self.assertFalse(self.scanner.is_hidden_directory("tests"))
         self.assertFalse(self.scanner.is_hidden_directory("normal_dir"))
 
+    def test_scan_directory_skips_symlinked_files(self) -> None:
+        """Test that symlinked files are skipped."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            Path(tmpdir, "file1.py").touch()
+            # Create symlink target
+            Path(tmpdir, "target.py").touch()
+            # Create symlink (may fail on some systems, skip if not supported)
+            try:
+                link = Path(tmpdir, "link.py")
+                link.symlink_to(Path(tmpdir, "target.py"))
+            except (OSError, NotImplementedError):
+                self.skipTest("Symlinks not supported on this system")
+
+            result = self.scanner.scan_directory(tmpdir)
+            # Should include actual file and target, but not symlink
+            self.assertIn("file1.py", result)
+            self.assertIn("target.py", result)
+            self.assertNotIn("link.py", result)
+
 
 if __name__ == "__main__":
     unittest.main()

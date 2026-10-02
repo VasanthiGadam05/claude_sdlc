@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+
 from markdown import MarkdownGenerator
 from scanner import DirectoryScanner
 from ui import UserInterface
@@ -33,9 +35,6 @@ def main() -> int:
         )
         return 0
 
-    except ValueError as e:
-        ui.display_error(f"Invalid input. {str(e)}")
-        return 1
     except (FileNotFoundError, NotADirectoryError) as e:
         ui.display_error(str(e))
         return 1

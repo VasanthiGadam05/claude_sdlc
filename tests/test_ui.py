@@ -25,24 +25,26 @@ class TestUserInterface(unittest.TestCase):
                 result = self.ui.get_directory_path()
                 self.assertEqual(result, str(Path(tmpdir).resolve()))
 
-    def test_get_directory_path_nonexistent_directory(self) -> None:
-        """Test with a nonexistent directory path."""
-        with patch(
-            "builtins.input",
-            side_effect=["/nonexistent/path", "/another/missing"]
-        ):
-            with self.assertRaises(EOFError):
-                self.ui.get_directory_path()
-
-    def test_get_directory_path_file_not_directory(self) -> None:
-        """Test with a file path instead of directory."""
-        with tempfile.NamedTemporaryFile() as tmpfile:
+    def test_get_directory_path_nonexistent_then_valid(self) -> None:
+        """Test that invalid paths are rejected and valid paths are accepted."""
+        with tempfile.TemporaryDirectory() as tmpdir:
             with patch(
                 "builtins.input",
-                side_effect=[tmpfile.name, "/nonexistent"]
+                side_effect=["/nonexistent/path", tmpdir]
             ):
-                with self.assertRaises(EOFError):
-                    self.ui.get_directory_path()
+                result = self.ui.get_directory_path()
+                self.assertEqual(result, str(Path(tmpdir).resolve()))
+
+    def test_get_directory_path_file_then_valid(self) -> None:
+        """Test that file paths are rejected but directory paths are accepted."""
+        with tempfile.NamedTemporaryFile() as tmpfile:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                with patch(
+                    "builtins.input",
+                    side_effect=[tmpfile.name, tmpdir]
+                ):
+                    result = self.ui.get_directory_path()
+                    self.assertEqual(result, str(Path(tmpdir).resolve()))
 
     def test_display_error_format(self, capsys=None) -> None:
         """Test error message formatting."""

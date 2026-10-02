@@ -32,9 +32,13 @@ class DirectoryScanner:
 
         python_files = []
 
+        def handle_walk_error(error):
+            """Handle errors during directory walk."""
+            print(f"Warning: {error}")
+
         try:
             for dirpath, dirnames, filenames in os.walk(
-                root, followlinks=False
+                root, followlinks=False, onerror=handle_walk_error
             ):
                 # Filter out hidden directories
                 dirnames[:] = [
@@ -47,11 +51,15 @@ class DirectoryScanner:
                 for filename in filenames:
                     if filename.endswith(".py"):
                         file_path = current_path / filename
+                        # Skip symlinked files
+                        if file_path.is_symlink():
+                            print(f"Warning: Skipping symlinked file: {file_path.relative_to(root).as_posix()}")
+                            continue
                         relative_path = file_path.relative_to(root)
                         python_files.append(relative_path.as_posix())
 
-        except PermissionError as e:
-            print(f"Warning: Permission denied while scanning. {e}")
+        except Exception as e:
+            print(f"Warning: Error during scan: {e}")
 
         return sorted(python_files)
 
